@@ -2,12 +2,15 @@ import { useRef, useState } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { Image, Send, X } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { useAuthStore } from "../store/useAuthStore";
 
 const MessageInput = () => {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
-  const { sendMessage } = useChatStore();
+  const { sendMessage, selectedUser } = useChatStore();
+  const socket = useAuthStore((state) => state.socket);
+  const typingTimeoutRef = useRef(null);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -28,6 +31,25 @@ const MessageInput = () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const handleTyping = (e) => {
+    setText(e.target.value);
+
+    if (socket && selectedUser) {
+      socket.emit("typing", { isTyping: true, receiverId: selectedUser._id });
+    }
+
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+
+    typingTimeoutRef.current = setTimeout(() => {
+      if (socket && selectedUser) {
+        socket.emit("typing", {
+          isTyping: false,
+          receiverId: selectedUser._id,
+        });
+      }
+    }, 1000); // Send 'stop typing' after 1 second of inactivity
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!text.trim() && !imagePreview) return;
@@ -38,7 +60,6 @@ const MessageInput = () => {
         image: imagePreview,
       });
 
-      // Clear form
       setText("");
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -76,7 +97,7 @@ const MessageInput = () => {
             className="w-full input input-bordered rounded-lg input-sm sm:input-md"
             placeholder="Type a message..."
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={handleTyping}
           />
           <input
             type="file"
@@ -85,7 +106,6 @@ const MessageInput = () => {
             ref={fileInputRef}
             onChange={handleImageChange}
           />
-
           <button
             type="button"
             className={`hidden sm:flex btn btn-circle
@@ -106,4 +126,5 @@ const MessageInput = () => {
     </div>
   );
 };
+
 export default MessageInput;
