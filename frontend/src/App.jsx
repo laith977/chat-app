@@ -1,5 +1,4 @@
 import Navbar from "./components/Navbar";
-
 import HomePage from "./pages/HomePage";
 import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
@@ -13,11 +12,12 @@ import { useEffect } from "react";
 
 import { Loader } from "lucide-react";
 import { Toaster } from "react-hot-toast";
+import SessionManager from "./components/SessionManager";
 
 const App = () => {
-  const { authUser, checkAuth, isCheckingAuth, onlineUsers } = useAuthStore();
+  const { authUser, checkAuth, isCheckingAuth, onlineUsers,accessToken } = useAuthStore();
   const { theme } = useThemeStore();
-
+  console.log(accessToken)
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
@@ -32,6 +32,8 @@ const App = () => {
   return (
     <div data-theme={theme}>
       <Navbar />
+      {/* Only show the SessionManager if the user is authenticated */}
+      {authUser && <SessionManager authUser={authUser} />}
 
       <Routes>
         <Route
@@ -57,4 +59,5 @@ const App = () => {
     </div>
   );
 };
+
 export default App;
